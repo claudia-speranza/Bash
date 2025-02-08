@@ -1,2 +1,2 @@
-# Bash
-BankDash : dashboard to handle my investments 
+# BASH: my BAnk daSH
+Dashboard to handle my investments 
