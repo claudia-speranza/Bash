@@ -26,15 +26,19 @@ class BasicData(pd.DataFrame):
             df = pd.read_excel(file_path)
             if df.empty:
                 raise ValueError("Excel file is empty")
-            return cls.from_records(cls.adapt_excel(df))
+            return cls.adapt_excel(df)
         except FileNotFoundError:
             raise FileNotFoundError(f"Excel file not found at path: {file_path}")
         except Exception as e:
             raise ValueError(f"Error reading Excel file: {str(e)}")
 
+    @property
+    def _constructor(self):
+        return type(self)
+
     @classmethod
     def adapt_excel(cls, records):
-        return records
+        return cls(records)
 
 
 

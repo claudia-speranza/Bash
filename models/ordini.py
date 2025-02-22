@@ -28,7 +28,7 @@ class Ordini(BasicTimedData):
                                + records.SpeseFondiSgr + records.CommissioniAmministrato)
         records['EntrateUscite'] = records.Controvalore * records.Segno + records.SpeseTotali
         records = records.sort_values('Data').reset_index(drop=True)
-        return records
+        return cls(records)
 
     @property
     def investimenti(self) -> float:

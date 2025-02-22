@@ -15,7 +15,7 @@ class Movimenti(BasicTimedData):
         records['Data'] = pd.to_datetime(records.Data, dayfirst=True)
         records['EntrateUscite'] = records.Entrate + records.Uscite
         records = records.sort_values('Data').reset_index(drop=True)
-        return records
+        return cls(records)
 
     @property
     def liquidita(self) -> float:

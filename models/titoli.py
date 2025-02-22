@@ -17,7 +17,7 @@ class Titoli(BasicTimedData):
     @classmethod
     def adapt_excel(cls, records):
         records = records.fillna('')
-        return records
+        return cls(records)
 
     def find_by_isin(self, isin: str) -> Optional[dict]:
         rows = self.loc[self['ISIN'] == isin]
