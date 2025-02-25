@@ -9,12 +9,15 @@ then
   python3 -m venv ./bash-venv
   source ./bash-venv/bin/activate
   echo "Installing all requirements from pip..."
+  pip install --quiet --upgrade pip
+  pip install --quiet -r requirements.txt
 else
   echo "Virtual environment found in ${VENV_PATH}, updating it.."
   source "${VENV_PATH}"/bin/activate
   echo "Updating all requirements from pip..."
+  #pip install --quiet -r requirements.txt
+
 fi
-pip install --quiet --upgrade pip
-pip install --quiet -r requirements.txt
+
 
 streamlit run main.py

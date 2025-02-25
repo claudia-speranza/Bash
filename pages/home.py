@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -63,30 +64,67 @@ def barchart_entrate_uscite():
     )
     st.plotly_chart(fig)
 
+
 def plot_liquidita_investimenti():
     fig = go.Figure()
+
+    # Get cumulative sums for each dataset
+    investimenti_cum = ordini['EntrateUscite'].cumsum()
+    liquidita_cum = movimenti['EntrateUscite'].cumsum()
+
+    # Add investment trace
     fig.add_trace(
         go.Scatter(
-            x=ordini['Data'],
-            y=ordini['EntrateUscite'].cumsum(),
+            x=ordini['DataValuta'],
+            y=investimenti_cum,
             mode='lines',
             name='Investimenti',
             line=dict(color='#1f77b4', width=2)
         )
     )
+
+    # Add liquidity trace
     fig.add_trace(
         go.Scatter(
             x=movimenti['Data'],
-            y=movimenti['EntrateUscite'].cumsum(),
+            y=liquidita_cum,
             mode='lines',
             name='Liquidita',
             line=dict(color='#1f4324', width=2)
         )
     )
 
+    # Create total amount data
+    # Since the two datasets might have different dates, we need to handle this properly
+    # Combine dates from both datasets
+    all_dates = pd.concat([
+        pd.DataFrame({'Date': ordini['DataValuta'], 'Type': 'Investimenti', 'Value': investimenti_cum}),
+        pd.DataFrame({'Date': movimenti['Data'], 'Type': 'Liquidita', 'Value': liquidita_cum})
+    ])
+
+    # Group by date and pivot to get values for each type
+    pivot_df = all_dates.pivot_table(index='Date', columns='Type', values='Value', aggfunc='last')
+
+    # Forward fill missing values (to carry forward last known value)
+    pivot_df = pivot_df.fillna(method='ffill')
+
+    # Calculate total (sum of both columns)
+    pivot_df['Total'] = pivot_df['Investimenti'] + pivot_df['Liquidita']
+
+    # Add total trace
+    fig.add_trace(
+        go.Scatter(
+            x=pivot_df.index,
+            y=pivot_df['Total'],
+            mode='lines',
+            name='Patrimonio',
+            line=dict(color='#ff7f0e', width=3, dash='dot')  # Orange dotted line for total
+        )
+    )
+
     # Update layout
     fig.update_layout(
-        title='Investimenti e liquidita',
+        title='Investimenti e liquidità',
         xaxis_title='Date',
         yaxis_title='Cumulativo',
         showlegend=True,
