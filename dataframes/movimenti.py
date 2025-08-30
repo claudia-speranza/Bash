@@ -2,7 +2,7 @@ import re
 
 import pandas as pd
 
-from models.basic import BasicTimedData
+from dataframes.basic import BasicTimedData
 
 
 class Movimenti(BasicTimedData):

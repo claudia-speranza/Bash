@@ -4,9 +4,10 @@ from datetime import datetime
 
 import streamlit as st
 
-from models.movimenti import Movimenti
-from models.ordini import Ordini
-from models.titoli import Titoli
+from dataframes.movimenti import Movimenti
+from dataframes.ordini import Ordini
+from dataframes.titoli import Titoli
+from sql.manager import DBInstance
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data-path', default='./data', help='path to csv file containing bank incomes and expenses')

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from models.basic import BasicTimedData
+from dataframes.basic import BasicTimedData
 
 
 class Titoli(BasicTimedData):
