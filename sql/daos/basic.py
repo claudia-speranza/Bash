@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime
 from typing import Optional, List, Any, Dict, Tuple
 
@@ -14,7 +14,7 @@ class BasicDao(ABC):
     """A base class for handling data operations using SQLAlchemy."""
     db = DBInstance()
 
-    def __init__(self, model_class: type):
+    def __init__(self, model_class: Base):
         """
         Initialize with a database manager.
 
@@ -23,6 +23,12 @@ class BasicDao(ABC):
         """
         self.model_class = model_class
         self.table_name = model_class.__tablename__
+        self.create_table()
+
+    def create_table(self):
+        """Create all tables defined in the models."""
+        Base.metadata.create_all(self.db.engine, tables=[self.model_class.__table__])
+        logger.info(f'Table {self.table_name} ready in database')
 
     def insert_in_batch(self, data: List[Base]):
         """

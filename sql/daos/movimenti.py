@@ -1,12 +1,9 @@
-import logging
 import re
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-import pandas as pd
 
 from sql.daos.basic import BasicTimedDao
 from sql.models.movimenti import MovimentiModel
-from sql.utils import clean_numeric_value, ensure_datetime, logger, dataframe_to_sql
 
 
 class Movimenti(BasicTimedDao):

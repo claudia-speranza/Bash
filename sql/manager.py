@@ -3,9 +3,9 @@ import os
 
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import sessionmaker, Session
-
-from sql.models.basic import Base
-
+#
+# logging.basicConfig()
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 class DBInstance:
     """A singleton class to manage database connections and session creation."""
@@ -36,14 +36,8 @@ class DBInstance:
         )
         self.engine = create_engine(url_object)
         self.SessionMaker = sessionmaker(bind=self.engine)
-        self.create_all_tables()
         # Mark as initialized to prevent re-initialization
         DBInstance._initialized = True
-
-    def create_all_tables(self):
-        """Create all tables defined in the models."""
-        logging.info('Adding missing tables to database')
-        Base.metadata.create_all(self.engine)
 
     @property
     def session(self) -> Session:

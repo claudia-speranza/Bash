@@ -1,10 +1,7 @@
 import logging
 from datetime import datetime
 from typing import Optional, Any
-
 import pandas as pd
-
-from sql.models.basic import Base
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -126,3 +123,4 @@ def convert_file_to_table(file_path) -> Optional[pd.DataFrame]:
             df.columns = df.columns.str.strip()
             return df
     return None
+
