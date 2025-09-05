@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -14,7 +15,7 @@ def adapt_movimenti_df(df: pd.DataFrame) -> pd.DataFrame:
                    "Descrizione": "descrizione",
                    "Descrizione_Completa": "descrizione_completa"}
     df = df.rename(columns=rename_dict)
-    df['importo'] = df['Entrate'].fillna(0) - df['Uscite'].fillna(0)
+    df['importo'] = df['Entrate'].fillna(0) + df['Uscite'].fillna(0)
     df = df.drop(columns=['Entrate', 'Uscite', 'Stato'])
     df['data_operazione'] = pd.to_datetime(df['data_operazione'], dayfirst=True)
     df['data_valuta'] = pd.to_datetime(df['data_valuta'], dayfirst=True)
@@ -32,17 +33,25 @@ def adapt_ordini_df(df: pd.DataFrame) -> pd.DataFrame:
                    "Prezzo": "prezzo",
                    "Cambio": "cambio",
                    "Controvalore": "controvalore",
-                   "Commissioni Fondi Sw/Ingr/Uscita": "commissioni_fondi_sw",
-                   "Commissioni Fondi Banca Corrispondente": "commissioni_fondi_banca",
-                   "Spese Fondi Sgr": "spese_fondi_sgr",
-                   "Commissioni amministrato": "commissioni_amministrato"
                    }
     df = df.rename(columns=rename_dict)
-    for col in set(df.columns) - set(rename_dict.values()):
-        del df[col]
     df['data_operazione'] = pd.to_datetime(df['data_operazione'], dayfirst=True)
     df['data_valuta'] = pd.to_datetime(df['data_valuta'], dayfirst=True)
-    df['segno'] = df['segno'].map({'A': 1, 'V': -1}).fillna(0).astype(int)
+    df['importo'] = df['controvalore'] * df['segno'].map({'A': -1, 'V': 1}).fillna(1).astype(int)
+
+    commissioni = [
+        "Commissioni Fondi Sw/Ingr/Uscita",
+        "Commissioni Fondi Banca Corrispondente",
+        "Spese Fondi Sgr",
+        "Commissioni amministrato"
+    ]
+    conditions = [ df[comm] > 0 for comm in commissioni ]
+
+    df['commissione'] = df[commissioni].fillna(0).sum(axis=1)
+    df['tipo_commissione'] = np.select(conditions, commissioni, default="Nessuna")
+
+    df = df.drop(columns=['Titolo','Commissioni Fondi Sw/Ingr/Uscita', 'Commissioni Fondi Banca Corrispondente',
+                          'Spese Fondi Sgr', 'Commissioni amministrato'])
     return df
 
 

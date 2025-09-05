@@ -1,31 +1,31 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from typing import Optional
 
-from sql.models.basic import Base
+from sqlalchemy import String, Float, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from sql.models.basic import OperationBase
 
 
-class OrdiniModel(Base):
+class OrdiniModel(OperationBase):
     """SQLAlchemy model for the ordini table."""
     __tablename__ = 'ordini'
 
-    data_operazione = Column(DateTime, nullable=False, index=True, primary_key=True)
-    data_valuta = Column(DateTime)
-    isin = Column(String, nullable=False, index=True, primary_key=True)
-    descrizione = Column(String)
-    segno = Column(Integer)  # 1 for 'A', -1 for 'V', 0 for 'other'
-    quantita = Column(Float)
-    divisa = Column(String)
-    prezzo = Column(Float)
-    cambio = Column(Float)
-    controvalore = Column(Float, primary_key=True)
-    commissioni_fondi_sw = Column(Float, default=0)
-    commissioni_fondi_banca = Column(Float, default=0)
-    spese_fondi_sgr = Column(Float, default=0)
-    commissioni_amministrato = Column(Float, default=0)
+    isin: Mapped[str] = mapped_column(String, ForeignKey("titoli.isin"), nullable=False, index=True, primary_key=True)
+    segno: Mapped[Optional[str]] = mapped_column(String)
+    quantita: Mapped[Optional[float]] = mapped_column(Float)
+    divisa: Mapped[Optional[str]] = mapped_column(String)
+    prezzo: Mapped[Optional[float]] = mapped_column(Float)
+    cambio: Mapped[Optional[float]] = mapped_column(Float)
+    controvalore: Mapped[float] = mapped_column(Float, primary_key=True)
+    commissione: Mapped[float] = mapped_column(Float, default=0)
+    tipo_commissione: Mapped[Optional[str]] = mapped_column(String)
+    importo: Mapped[float] = mapped_column(Float, default=0, primary_key=True)
+
+    # Relationship to titolo
+    titolo_info: Mapped["TitoliModel"] = relationship(
+        "TitoliModel",
+        back_populates="ordini"
+    )
 
     def __repr__(self):
         return f"<Ordine(data='{self.data_operazione}', isin='{self.isin}', quantita={self.quantita}, prezzo={self.prezzo})>"
-
-    @property
-    def spese_totali(self) -> float:
-        return (self.commissioni_fondi_sw + self.commissioni_fondi_banca +
-                self.spese_fondi_sgr + self.commissioni_amministrato)

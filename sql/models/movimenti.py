@@ -1,27 +1,53 @@
-from sqlalchemy import Column, DateTime, String, Float
+from enum import Enum
 
-from sql.models.basic import Base
+from sqlalchemy import String, func, ColumnElement, or_
+from sqlalchemy.orm import Mapped, mapped_column
+
+from sql.models.basic import OperationBase
 
 
-class MovimentiModel(Base):
+class MovimentiCategory(Enum):
+    """Enumeration for movement categories."""
+    CompravenditaTitoli = "CompravenditaTitoli"
+    SpeseConto = "SpeseConto"
+    Bonifici = "Bonifici"
+    Commissioni = "Commissioni"
+    Tasse = "Tasse"
+    Dividendi = "Dividendi"
+    AltriMovimenti = "AltriMovimenti"
+    Interessi = "Interessi"
+
+    def __str__(self):
+        return self.value
+
+    @classmethod
+    def list_values(cls):
+        return [category.value for category in cls]
+
+
+class MovimentiModel(OperationBase):
     """SQLAlchemy model for the movimenti table."""
     __tablename__ = 'movimenti'
 
-    data_operazione = Column(DateTime, nullable=False, index=True, primary_key=True)
-    data_valuta = Column(DateTime, nullable=False)
-    descrizione = Column(String)
-    descrizione_completa = Column(String, primary_key=True)
-    importo = Column(Float, default=0, primary_key=True)
+    descrizione_completa: Mapped[str] = mapped_column(String, primary_key=True)
 
     def __repr__(self):
         return f"<Movimento(data='{self.data_operazione}', importo={self.importo}, descrizione={self.descrizione})>"
 
-    @property
-    def entrate(self) -> float:
-        """Return positive amounts (entrate)."""
-        return self.importo if self.importo > 0 else 0.0
+    @classmethod
+    def is_category(cls, category: MovimentiCategory) -> ColumnElement[bool]:
+        """Filter by movement category."""
+        category_map = {
+            MovimentiCategory.Bonifici: ['bonifico'],
+            MovimentiCategory.CompravenditaTitoli: ['compravendita titoli', 'rimborso titoli'],
+            MovimentiCategory.Tasse: ['imposta', 'riten'],
+            MovimentiCategory.Dividendi: ['stacco cedole', 'dividendo'],
+            MovimentiCategory.Interessi: ['interessi'],
+            MovimentiCategory.SpeseConto: ['canone mensile'],
+        }
+        keywords = category_map.get(category, [])
+        if not keywords:
+            return False
 
-    @property
-    def uscite(self) -> float:
-        """Return negative amounts as positive (uscite)."""
-        return -self.importo if self.importo < 0 else 0.0
+        conditions = [func.lower(cls.descrizione).like(f'%{kw}%') for kw in keywords]
+        return or_(*conditions)
