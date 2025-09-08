@@ -17,7 +17,7 @@ def build_menu():
     st.sidebar.page_link("pages/home.py", label="Home", icon="🏠")
     st.sidebar.page_link("pages/movimenti.py", label="Movimenti")
     st.sidebar.page_link("pages/azioni.py", label="Azioni")
-    st.sidebar.page_link("pages/obbligazioni.py", label="Obbligazioni", disabled=True)
+    st.sidebar.page_link("pages/obbligazioni.py", label="Obbligazioni")
     st.sidebar.page_link("pages/pac.py", label="PAC", disabled=True)
     st.sidebar.page_link("pages/imposte.py", label="Imposte")
     st.sidebar.page_link("pages/caricamento.py", label="Caricamento Dati")

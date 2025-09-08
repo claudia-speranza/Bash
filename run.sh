@@ -17,7 +17,6 @@ else
   source "${VENV_PATH}"/bin/activate
   echo "Updating all requirements from pip..."
   #pip install --quiet -r requirements.txt
-
 fi
 
 

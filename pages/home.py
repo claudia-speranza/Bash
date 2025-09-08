@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from menu import build_menu
-from sql.dao_list import MOVIMENTI_DAO, ORDINI_DAO
+from sql.dao_list import MOVIMENTI_DAO, ORDINI_DAO, TITOLI_DAO
 
 build_menu()
 
@@ -16,8 +16,8 @@ def create_basic_info():
 
     m1 = MOVIMENTI_DAO.get_liquidita()
     m2 = MOVIMENTI_DAO.get_liquidita(today - timedelta(days=30))
-    o1 = ORDINI_DAO.get_investimenti_correnti()
-    o2 = ORDINI_DAO.get_investimenti_correnti(today - timedelta(days=30))
+    o1 = MOVIMENTI_DAO.get_investimenti()
+    o2 = MOVIMENTI_DAO.get_investimenti(today - timedelta(days=30))
 
     c1, c2, c3 = st.columns((1, 1, 1))
     c1.metric(label='Liquidità', value=f'{m1} €',
@@ -31,7 +31,7 @@ def create_basic_info():
 
 
 
-def plot_liquidita_investimenti():
+def plot_liquidita_investimenti(ordini_df, movimenti_df):
     fig = go.Figure()
 
     # Get cumulative sums for each dataset
@@ -72,7 +72,7 @@ def plot_liquidita_investimenti():
     pivot_df = all_dates.pivot_table(index='Date', columns='Type', values='Value', aggfunc='last')
 
     # Forward fill missing values (to carry forward last known value)
-    pivot_df = pivot_df.fillna(method='ffill')
+    pivot_df = pivot_df.bfill()
 
     # Calculate total (sum of both columns)
     pivot_df['Total'] = pivot_df['Investimenti'] + pivot_df['Liquidita']
@@ -105,11 +105,24 @@ def plot_liquidita_investimenti():
     )
     st.plotly_chart(fig)
 
-
+def titoli_attivi_table(titoli_df):
+    titoli_df = titoli_df.loc[titoli_df['portfolio_quantity'] > 0]
+    st.dataframe(titoli_df, width='stretch', hide_index=True,
+                 column_config={
+                     "isin": st.column_config.TextColumn("Isin"),
+                     "titolo": st.column_config.TextColumn("Titolo"),
+                     "portfolio_quantity": st.column_config.NumberColumn("Quantità", format="%d"),
+                     "strumento": st.column_config.TextColumn("Strumento"),
+                     "portfolio_value": st.column_config.NumberColumn("Valore", format=('euro')),}
+                 )
 
 with st.spinner('Caricamento ...'):
+    titoli_df = TITOLI_DAO.get_with_quantity()
+
     movimenti_df = MOVIMENTI_DAO.get_in_timerange(as_dataframe=True)
     ordini_df = ORDINI_DAO.get_in_timerange(as_dataframe=True)
 
     create_basic_info()
-    plot_liquidita_investimenti()
+    st.subheader('Titoli attivi nel portafoglio')
+    titoli_attivi_table(titoli_df)
+    plot_liquidita_investimenti(ordini_df, movimenti_df)

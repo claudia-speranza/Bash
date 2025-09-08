@@ -1,9 +1,7 @@
-from datetime import timedelta, datetime
-
-import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from components.tables_utils import build_operation_table
 from menu import build_menu
 from sql.dao_list import MOVIMENTI_DAO, ORDINI_DAO
 from sql.models.movimenti import MovimentiCategory
@@ -34,7 +32,7 @@ def barchart_entrate_uscite_ext():
 
     # Update layout
     fig.update_layout(
-        title='Entrate e uscite verso conti esterni',
+        title='Movimenti conti esterni',
         xaxis_title='Mese',
         yaxis_title='Totale',
         barmode='group',
@@ -73,7 +71,7 @@ def barchart_entrate_uscite_portafoglio():
 
     # Update layout
     fig.update_layout(
-        title='Entrate e uscite verso il portafoglio',
+        title='Movimenti portafoglio',
         xaxis_title='Mese',
         yaxis_title='Totale',
         barmode='group',
@@ -89,29 +87,22 @@ def barchart_entrate_uscite_portafoglio():
     )
     st.plotly_chart(fig)
 
-def build_operation_table(df):
-    st.dataframe(df, hide_index=True, width='stretch',
-                 column_order=("data_operazione", "importo", "descrizione_completa"),
-                 column_config={
-                     "data_operazione": st.column_config.DateColumn("Data", format="DD-MM-YYYY"),
-                     "importo": st.column_config.NumberColumn("Importo"),
-                     "descrizione_completa": st.column_config.TextColumn("Descrizione completa"),
-                 })
-
 
 with st.spinner('Caricamento ...'):
     movimenti_df = MOVIMENTI_DAO.get_in_timerange(as_dataframe=True)
     ordini_df = ORDINI_DAO.get_in_timerange(as_dataframe=True)
 
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([2, 1])
+
     with col1:
-        barchart_entrate_uscite_ext()
+        st.image('components/schema.svg', width='stretch')
+        option = st.selectbox(
+            "Elenco movimenti per categoria",
+            (MovimentiCategory.list_values()),
+        )
+
+        build_operation_table(MOVIMENTI_DAO.get_by_category(category=MovimentiCategory(option)))
     with col2:
+        barchart_entrate_uscite_ext()
         barchart_entrate_uscite_portafoglio()
 
-    option = st.selectbox(
-        "Elenco movimenti per categoria",
-        (MovimentiCategory.list_values()),
-    )
-
-    build_operation_table(MOVIMENTI_DAO.get_by_category(category=MovimentiCategory(option)))

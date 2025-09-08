@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 import pandas as pd
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 
 from sql.daos.basic import BasicTimedDao
 from sql.models.movimenti import MovimentiModel, MovimentiCategory
@@ -24,6 +24,18 @@ class Movimenti(BasicTimedDao):
         # Calculate total from the filtered results
         total = self.get_one(stmt)
         return round(total, 2) if total else 0.0
+
+    def get_investimenti(self, start_date: Optional[datetime] = None,
+                                  end_date: Optional[datetime] = None) -> float:
+        """Calculate total investments positive value."""
+        stmt = (
+            select(func.sum(MovimentiModel.importo))
+            .where(and_(MovimentiModel.in_timerange(start_date, end_date),
+                        MovimentiModel.is_category(MovimentiCategory.CompravenditaTitoli)))
+        )
+        # Calculate total from the filtered results
+        total = self.get_one(stmt)
+        return - round(total, 2) if total else 0.0
 
     def get_versamenti(self, start_date: Optional[datetime] = None,
                          end_date: Optional[datetime] = None) -> float:
@@ -76,7 +88,6 @@ class Movimenti(BasicTimedDao):
 
     def get_by_category(self, category: MovimentiCategory) -> pd.DataFrame:
         """Filter movements by category."""
-        print('Looking for category:', category)
         stmt = (
             select(MovimentiModel)
             .where(MovimentiModel.is_category(category))

@@ -24,6 +24,14 @@ class MovimentiCategory(Enum):
     def list_values(cls):
         return [category.value for category in cls]
 
+category_map = {
+    MovimentiCategory.Bonifici: ['bonifico'],
+    MovimentiCategory.CompravenditaTitoli: ['compravendita titoli', 'rimborso titoli'],
+    MovimentiCategory.Tasse: ['imposta', 'riten'],
+    MovimentiCategory.Dividendi: ['stacco cedole', 'dividendo'],
+    MovimentiCategory.Interessi: ['interessi'],
+    MovimentiCategory.SpeseConto: ['canone mensile'],
+}
 
 class MovimentiModel(OperationBase):
     """SQLAlchemy model for the movimenti table."""
@@ -37,14 +45,15 @@ class MovimentiModel(OperationBase):
     @classmethod
     def is_category(cls, category: MovimentiCategory) -> ColumnElement[bool]:
         """Filter by movement category."""
-        category_map = {
-            MovimentiCategory.Bonifici: ['bonifico'],
-            MovimentiCategory.CompravenditaTitoli: ['compravendita titoli', 'rimborso titoli'],
-            MovimentiCategory.Tasse: ['imposta', 'riten'],
-            MovimentiCategory.Dividendi: ['stacco cedole', 'dividendo'],
-            MovimentiCategory.Interessi: ['interessi'],
-            MovimentiCategory.SpeseConto: ['canone mensile'],
-        }
+        if category == MovimentiCategory.AltriMovimenti:
+            return ~or_(
+                cls.is_category(MovimentiCategory.Bonifici),
+                cls.is_category(MovimentiCategory.CompravenditaTitoli),
+                cls.is_category(MovimentiCategory.Tasse),
+                cls.is_category(MovimentiCategory.Dividendi),
+                cls.is_category(MovimentiCategory.Interessi),
+                cls.is_category(MovimentiCategory.SpeseConto),
+            )
         keywords = category_map.get(category, [])
         if not keywords:
             return False
