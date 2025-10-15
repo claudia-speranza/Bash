@@ -4,15 +4,17 @@ import streamlit as st
 from components.tables_utils import build_operation_table
 from menu import build_menu
 from sql.dao_list import MOVIMENTI_DAO, ORDINI_DAO
-from sql.models.movimenti import MovimentiCategory
+from sql.models.movimenti import MovimentiCategory, MovimentiModel
 
 build_menu()
 
 
 def barchart_entrate_uscite_ext():
     fig = go.Figure()
-    monthly_sum_in = MOVIMENTI_DAO.get_monthly_ext_to_conto()
-    monthly_sum_out = MOVIMENTI_DAO.get_monthly_conto_to_ext()
+    monthly_sum_in = MOVIMENTI_DAO.aggregate_by_date('month', MovimentiModel.importo,
+                                      (MovimentiModel.is_entrata() & MovimentiModel.is_category(MovimentiCategory.Bonifici)) )
+    monthly_sum_out = MOVIMENTI_DAO.aggregate_by_date('month', MovimentiModel.importo,
+                                      (MovimentiModel.is_uscita() & MovimentiModel.is_category(MovimentiCategory.Bonifici)) )
 
     # Add income bars
     fig.add_trace(go.Bar(
@@ -50,8 +52,10 @@ def barchart_entrate_uscite_ext():
 
 def barchart_entrate_uscite_portafoglio():
     fig = go.Figure()
-    monthly_sum_in = MOVIMENTI_DAO.get_monthly_portafoglio_to_conto()
-    monthly_sum_out = MOVIMENTI_DAO.get_monthly_conto_to_portafoglio()
+    monthly_sum_in = MOVIMENTI_DAO.aggregate_by_date('month', MovimentiModel.importo,
+                                      (MovimentiModel.is_entrata() & MovimentiModel.is_category(MovimentiCategory.CompravenditaTitoli)))
+    monthly_sum_out = MOVIMENTI_DAO.aggregate_by_date('month', MovimentiModel.importo,
+                                      (MovimentiModel.is_uscita() & MovimentiModel.is_category(MovimentiCategory.CompravenditaTitoli)))
 
     # Add income bars
     fig.add_trace(go.Bar(
@@ -88,10 +92,18 @@ def barchart_entrate_uscite_portafoglio():
     st.plotly_chart(fig)
 
 
+def create_badges():
+    c1, c2, c3, c4 = st.columns([1, 1, 1, 1])
+    c1.metric(label='Bonifici', value=f'{MOVIMENTI_DAO.sum_by_category(MovimentiCategory.Bonifici)} €')
+    c2.metric(label='CompravenditaTitoli', value=f'{MOVIMENTI_DAO.sum_by_category(MovimentiCategory.CompravenditaTitoli)} €')
+    c3.metric(label='Tasse', value=f'{MOVIMENTI_DAO.sum_by_category(MovimentiCategory.Tasse)} €')
+    c4.metric(label='SpeseConto', value=f'{MOVIMENTI_DAO.sum_by_category(MovimentiCategory.SpeseConto)} €')
+
+
 with st.spinner('Caricamento ...'):
     movimenti_df = MOVIMENTI_DAO.get_in_timerange(as_dataframe=True)
     ordini_df = ORDINI_DAO.get_in_timerange(as_dataframe=True)
-
+    create_badges()
     col1, col2 = st.columns([2, 1])
 
     with col1:

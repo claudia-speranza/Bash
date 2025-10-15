@@ -29,3 +29,18 @@ class OrdiniModel(OperationBase):
 
     def __repr__(self):
         return f"<Ordine(data='{self.data_operazione}', isin='{self.isin}', quantita={self.quantita}, prezzo={self.prezzo})>"
+
+    def to_dict(self):
+        return {
+            "data_operazione": self.data_operazione,
+            "isin": self.isin,
+            "segno": self.segno,
+            "quantita": self.quantita,
+            "divisa": self.divisa,
+            "prezzo": self.prezzo,
+            "cambio": self.cambio,
+            "controvalore": self.controvalore,
+            "commissione": self.commissione,
+            "tipo_commissione": self.tipo_commissione,
+            "importo": self.importo
+        }

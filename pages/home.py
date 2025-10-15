@@ -11,22 +11,26 @@ build_menu()
 
 
 
-def create_basic_info():
+def create_basic_info(titoli_df):
     today = datetime.now()
 
     m1 = MOVIMENTI_DAO.get_liquidita()
     m2 = MOVIMENTI_DAO.get_liquidita(today - timedelta(days=30))
-    o1 = MOVIMENTI_DAO.get_investimenti()
-    o2 = MOVIMENTI_DAO.get_investimenti(today - timedelta(days=30))
+
+    o1 = sum(titoli_df.loc[titoli_df['quantita'] > 0]['valore_di_carico'])
 
     c1, c2, c3 = st.columns((1, 1, 1))
     c1.metric(label='Liquidità', value=f'{m1} €',
               delta=f'{m2} ultimi 30 giorni')
-    c1.metric(label='Investimenti', value=f'{o1} €',
-              delta=f'{o2} ultimi 30 giorni')
+    c1.metric(label='Valore Investimenti', value=f'{o1} €',)
 
-    c3.metric(label='Patrimonio', value=f'{round(m1 + o1, 2)} €',
-              delta=f'{round(m2 + o2, 2)} ultimi 30 giorni')
+    c2.metric(label='Patrimonio', value=f'{round(m1 + o1, 2)} €')
+
+    incassi_netti = sum(titoli_df['incassi_netti'])
+    capitale_investito = sum(titoli_df['quantita_venduta'] * titoli_df['prezzo_medio_vendita'])
+    c3.metric(label='Incassi Netti', value=f'{round(incassi_netti, 2)} €')
+    if capitale_investito > 0:
+        c3.metric(label='Rendimento', value=f'{round(incassi_netti/capitale_investito*100, 2)} %')
 
 
 
@@ -106,23 +110,24 @@ def plot_liquidita_investimenti(ordini_df, movimenti_df):
     st.plotly_chart(fig)
 
 def titoli_attivi_table(titoli_df):
-    titoli_df = titoli_df.loc[titoli_df['portfolio_quantity'] > 0]
+    titoli_df = titoli_df.loc[titoli_df['quantita'] > 0]
+    titoli_df = titoli_df[['isin', 'titolo', 'quantita', 'strumento', 'valore_di_carico']]
     st.dataframe(titoli_df, width='stretch', hide_index=True,
                  column_config={
                      "isin": st.column_config.TextColumn("Isin"),
                      "titolo": st.column_config.TextColumn("Titolo"),
-                     "portfolio_quantity": st.column_config.NumberColumn("Quantità", format="%d"),
+                     "quantita": st.column_config.NumberColumn("Quantità", format="%d"),
                      "strumento": st.column_config.TextColumn("Strumento"),
-                     "portfolio_value": st.column_config.NumberColumn("Valore", format=('euro')),}
+                     "valore_di_carico": st.column_config.NumberColumn("Valore", format=('euro'))}
                  )
 
 with st.spinner('Caricamento ...'):
-    titoli_df = TITOLI_DAO.get_with_quantity()
+    titoli_df = TITOLI_DAO.get_full_info()
 
     movimenti_df = MOVIMENTI_DAO.get_in_timerange(as_dataframe=True)
     ordini_df = ORDINI_DAO.get_in_timerange(as_dataframe=True)
 
-    create_basic_info()
+    create_basic_info(titoli_df)
     st.subheader('Titoli attivi nel portafoglio')
     titoli_attivi_table(titoli_df)
     plot_liquidita_investimenti(ordini_df, movimenti_df)

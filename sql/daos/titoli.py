@@ -5,6 +5,7 @@ from sqlalchemy import select, func, case, or_, outerjoin, and_, desc
 from sqlalchemy.orm import selectinload
 
 from sql.daos.basic import BasicDao
+from sql.daos.ordini import analyze_orders
 from sql.models.ordini import OrdiniModel
 from sql.models.titoli import TitoliModel
 from sql.utils import logger
@@ -37,6 +38,17 @@ class Titoli(BasicDao):
                 )
         return self.get_all(stmt, True)
 
+    def get_full_info(self) -> pd.DataFrame:
+        stmt = (select(TitoliModel)
+                .options(selectinload(TitoliModel.ordini))
+                .order_by(TitoliModel.strumento, TitoliModel.titolo))
+        titoli_full = self.get_all(stmt, False)
+        titoli_info = [dict(isin=titolo.isin,
+                            titolo=titolo.titolo,
+                            strumento=titolo.strumento,
+                            **analyze_orders(titolo.ordini, titolo.strumento)) for titolo in titoli_full]
+        return pd.DataFrame(titoli_info)
+
     def get_azioni(self, as_dataframe: bool = False) -> Union[List[TitoliModel], pd.DataFrame]:
 
         stmt = (select(TitoliModel)
@@ -50,9 +62,9 @@ class Titoli(BasicDao):
                 .where(TitoliModel.strumento == 'Obbligazione'))
 
         return self.get_all(stmt, as_dataframe)
-
-if __name__ == '__main__':
-    result = Titoli().get_with_quantity()
-    print(result)
+#
+# if __name__ == '__main__':
+#     result = Titoli().get_full_info()
+#     print(result)
 
 

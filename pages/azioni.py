@@ -1,9 +1,11 @@
+import pandas as pd
+
 from components.tables_utils import style_dataframe
 from menu import build_menu
 import streamlit as st
 
 from sql.dao_list import TITOLI_DAO, ORDINI_DAO
-from sql.daos.ordini import analyze_orders_df
+from sql.daos.ordini import analyze_orders
 from sql.models.titoli import TitoliModel
 
 build_menu()
@@ -19,8 +21,10 @@ def build_titolo_table(titolo: TitoliModel):
                 f"Valuta: **{titolo.valuta}**  \n")
 
     st.subheader('Ordini associati')
-    ordini_df = ORDINI_DAO.get_by_isin(titolo.isin)
-    ordini_metrics = analyze_orders_df(ordini_df)
+    ordini_list = ORDINI_DAO.get_by_isin(titolo.isin, as_dataframe=False)
+    ordini_df = pd.DataFrame([o.to_dict() for o in ordini_list])
+
+    ordini_metrics = analyze_orders(ordini_list, titolo.strumento)
 
     ordini_df_styled = style_dataframe(ordini_df)
     st.dataframe(ordini_df_styled,
@@ -38,14 +42,18 @@ def build_titolo_table(titolo: TitoliModel):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"Quantita attiva: **{ordini_metrics['quantita']}**  \n"
-                    f"Prezzo medio di acquisto: **{ordini_metrics['prezzo_medio'] }€**  \n"
-                    f"Totale commissioni: **{ordini_metrics['commissioni']}€**  \n")
+                    f"Prezzo medio di acquisto: **{ordini_metrics['prezzo_medio_acquisto'] }€**  \n"
+                    f"Prezzo medio di vendita: **{ordini_metrics['prezzo_medio_vendita'] }€**  \n"
+                    f"Totale commissioni: **{ordini_metrics['commissioni']}€**  \n\n"
+                    f"Incasso netto: **{ordini_metrics['incassi_netti']}€**  \n"
+                    f"Rendimento: **{ordini_metrics['rendimento'] * 100}%**  \n")
     with col2:
-        data_chart = ordini_df[['importo']].copy()
-        valore = round(ordini_metrics['quantita']*ordini_metrics['prezzo_medio']+ordini_metrics['incassi_netti'], 2)
-        st.metric(
-            "Valore", f"{valore} €",  f"{ordini_metrics['incassi_netti']} €", chart_data=data_chart, chart_type="area", border=True
-        )
+        if len(ordini_df) > 0:
+            data_chart = ordini_df[['importo']].copy()
+            valore = round(ordini_metrics['quantita']*ordini_metrics['prezzo_medio_acquisto']+ordini_metrics['incassi_netti'], 2)
+            st.metric(
+                "Valore", f"{valore} €",  f"{ordini_metrics['incassi_netti']} €", chart_data=data_chart, chart_type="area", border=True
+            )
 
 with st.spinner('Caricamento ...'):
     all_titoli = TITOLI_DAO.get_azioni()

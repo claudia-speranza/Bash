@@ -30,6 +30,7 @@ if sudo docker ps -a --format '{{.Names}}' | grep -q "^postgres-db$"; then
     else
         # Container exists but is not running, start it
         echo "Starting existing 'postgres-db' container..."
+        sudo systemctl stop postgresql
         sudo docker start postgres-db
     fi
 else

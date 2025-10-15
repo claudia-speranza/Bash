@@ -26,3 +26,13 @@ class TitoliModel(Base):
 
     def __repr__(self):
         return f"<Titolo(isin={self.isin}, titolo='{self.titolo}'>"
+
+    def to_dict(self):
+        return {
+            "isin": self.isin,
+            "titolo": self.titolo,
+            "simbolo": self.simbolo,
+            "mercato": self.mercato,
+            "strumento": self.strumento,
+            "valuta": self.valuta
+        }
